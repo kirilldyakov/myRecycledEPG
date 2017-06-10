@@ -1,18 +1,99 @@
 <?xml version="1.0" encoding="utf-8"?>
-<android.support.constraint.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context="ru.strongit.myrecycledepg.MainActivity">
+    android:orientation="vertical">
 
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Hello World!"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintLeft_toLeftOf="parent"
-        app:layout_constraintRight_toRightOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+    <!-- Вертикальный скрол-->
+    <ScrollView
+        android:id="@+id/VScroll"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+        <!--Левая часть - логотипы-->
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
 
-</android.support.constraint.ConstraintLayout>
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:background="@android:color/holo_blue_light"
+                android:orientation="vertical">
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="match_parent"
+                    android:background="@android:color/holo_blue_light"
+                    android:orientation="vertical">
+                    <!--Заголовок-->
+                    <TextView
+                        android:layout_width="50dp"
+                        android:layout_height="@dimen/header_high"
+                        android:layout_marginBottom="8dp"
+                        android:text="Время" />
+
+                    <LinearLayout
+                        android:layout_width="50dp"
+                        android:layout_height="match_parent"
+                        android:background="@android:color/holo_blue_light"
+                        android:orientation="vertical">
+
+                        <TextView
+                            style="@style/stlLogo"
+                            android:background="@android:color/white"
+                            android:text="1111" />
+
+                        <TextView
+                            style="@style/stlLogo"
+                            android:background="@android:color/white"
+                            android:text="2222" />
+
+                        <TextView
+                            android:id="@+id/btn3"
+                            style="@style/stlLogo"
+                            android:background="@android:color/white"
+                            android:text="3333" />
+                    </LinearLayout>
+                </LinearLayout>
+            </LinearLayout>
+
+            <HorizontalScrollView
+                android:id="@+id/HScroll"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:scrollbars="horizontal">
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="@dimen/header_high"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="match_parent"
+                            android:text="16:30"></TextView>
+                    </LinearLayout>
+
+                    <android.support.v7.widget.RecyclerView
+                        android:id="@+id/cannels_recycle_view"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:background="@android:color/holo_orange_light"
+                        android:paddingTop="8dp"
+                        android:scrollbars="vertical" />
+                </LinearLayout>
+            </HorizontalScrollView>
+        </LinearLayout>
+    </ScrollView>
+
+
+</LinearLayout>
