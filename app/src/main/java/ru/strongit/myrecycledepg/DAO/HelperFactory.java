@@ -7,7 +7,6 @@ import com.j256.ormlite.android.apptools.OpenHelperManager;
 /**
  * Created by user on 10.06.17.
  */
-
 public class HelperFactory{
 
     private static DatabaseHelper databaseHelper;

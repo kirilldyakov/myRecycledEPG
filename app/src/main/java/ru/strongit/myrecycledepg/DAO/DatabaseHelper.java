@@ -38,7 +38,7 @@ public class DatabaseHelper extends OrmLiteSqliteOpenHelper {
         try
         {
 //            TableUtils.createTable(connectionSource, Goal.class);
-            TableUtils.createTable(connectionSource, Channel.class);
+            TableUtils.createTable(connectionSource, dbChannel.class);
         }
         catch (SQLException e){
             Log.e(TAG, "error creating DB " + DATABASE_NAME);
@@ -53,7 +53,7 @@ public class DatabaseHelper extends OrmLiteSqliteOpenHelper {
         try{
             //Так делают ленивые, гораздо предпочтительнее не удаляя БД аккуратно вносить изменения
             //TableUtils.dropTable(connectionSource, Goal.class, true);
-            TableUtils.dropTable(connectionSource, Channel.class, true);
+            TableUtils.dropTable(connectionSource, dbChannel.class, true);
             onCreate(db, connectionSource);
         }
         catch (SQLException e){
@@ -72,7 +72,7 @@ public class DatabaseHelper extends OrmLiteSqliteOpenHelper {
    //синглтон для ChannelDAO
     public ChannelDAO getChannelDAO() throws SQLException{
         if(ChannelDao == null){
-            ChannelDao = new ChannelDAO(getConnectionSource(), Channel.class);
+            ChannelDao = new ChannelDAO(getConnectionSource(), dbChannel.class);
         }
         return ChannelDao;
     }

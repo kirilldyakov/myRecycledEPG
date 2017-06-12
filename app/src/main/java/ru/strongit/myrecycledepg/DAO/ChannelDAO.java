@@ -14,14 +14,14 @@ import java.util.List;
  * Created by user on 10.06.17.
  */
 
-public class ChannelDAO extends BaseDaoImpl<Channel, Integer> {
+public class ChannelDAO extends BaseDaoImpl<dbChannel, Integer> {
 
     protected ChannelDAO(ConnectionSource connectionSource,
-                      Class<Channel> dataClass) throws SQLException {
+                      Class<dbChannel> dataClass) throws SQLException {
         super(connectionSource, dataClass);
     }
 
-    public List<Channel> getAllChannels() throws SQLException{
+    public List<dbChannel> getAllChannels() throws SQLException{
         return this.queryForAll();
     }
 }

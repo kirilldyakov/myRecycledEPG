@@ -16,11 +16,14 @@ import android.widget.Toast;
 
 import com.google.gson.Gson;
 
+import java.sql.SQLException;
 import java.util.List;
 
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
+import ru.strongit.myrecycledepg.DAO.HelperFactory;
+import ru.strongit.myrecycledepg.DAO.dbChannel;
 import ru.strongit.myrecycledepg.model.Channel;
 import ru.strongit.myrecycledepg.model.EPGModel;
 
@@ -149,5 +152,16 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
 
         return false;
 
+    }
+
+    @Override
+    public void onBackPressed() {
+        try {
+            dbChannel channel = new dbChannel(123, "Название", 456);
+
+            HelperFactory.getHelper().getChannelDAO().create(channel);
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
     }
 }
