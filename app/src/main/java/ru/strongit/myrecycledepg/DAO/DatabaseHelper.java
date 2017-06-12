@@ -10,6 +10,8 @@ import com.j256.ormlite.table.TableUtils;
 
 import java.sql.SQLException;
 
+import ru.strongit.myrecycledepg.model.Schedule;
+
 /**
  * Created by user on 10.06.17.
  */
@@ -22,11 +24,12 @@ public class DatabaseHelper extends OrmLiteSqliteOpenHelper {
     private static final String DATABASE_NAME ="epg.db";
 
     //с каждым увеличением версии, при нахождении в устройстве БД с предыдущей версией будет выполнен метод onUpgrade();
-    private static final int DATABASE_VERSION = 1;
+    private static final int DATABASE_VERSION = 2;
 
     //ссылки на DAO соответсвующие сущностям, хранимым в БД
 //    private GoalDAO goalDao = null;
     private ChannelDAO ChannelDao = null;
+    private ScheduleDAO ScheduleDao = null;
 
     public DatabaseHelper(Context context){
         super(context,DATABASE_NAME, null, DATABASE_VERSION);
@@ -38,7 +41,8 @@ public class DatabaseHelper extends OrmLiteSqliteOpenHelper {
         try
         {
 //            TableUtils.createTable(connectionSource, Goal.class);
-            TableUtils.createTable(connectionSource, dbChannel.class);
+            TableUtils.createTable(connectionSource, ChannelDB.class);
+            TableUtils.createTable(connectionSource, ScheduleDB.class);
         }
         catch (SQLException e){
             Log.e(TAG, "error creating DB " + DATABASE_NAME);
@@ -53,7 +57,8 @@ public class DatabaseHelper extends OrmLiteSqliteOpenHelper {
         try{
             //Так делают ленивые, гораздо предпочтительнее не удаляя БД аккуратно вносить изменения
             //TableUtils.dropTable(connectionSource, Goal.class, true);
-            TableUtils.dropTable(connectionSource, dbChannel.class, true);
+            TableUtils.dropTable(connectionSource, ChannelDB.class, true);
+            TableUtils.dropTable(connectionSource, ScheduleDB.class, true);
             onCreate(db, connectionSource);
         }
         catch (SQLException e){
@@ -72,9 +77,17 @@ public class DatabaseHelper extends OrmLiteSqliteOpenHelper {
    //синглтон для ChannelDAO
     public ChannelDAO getChannelDAO() throws SQLException{
         if(ChannelDao == null){
-            ChannelDao = new ChannelDAO(getConnectionSource(), dbChannel.class);
+            ChannelDao = new ChannelDAO(getConnectionSource(), ChannelDB.class);
         }
         return ChannelDao;
+    }
+
+    //синглтон для ChannelDAO
+    public ScheduleDAO getScheduleDAO() throws SQLException{
+        if(ScheduleDao == null){
+            ScheduleDao = new ScheduleDAO(getConnectionSource(), ScheduleDB.class);
+        }
+        return ScheduleDao;
     }
 
     //выполняется при закрытии приложения
@@ -84,4 +97,6 @@ public class DatabaseHelper extends OrmLiteSqliteOpenHelper {
 //        goalDao = null;
         ChannelDao = null;
     }
+
+
 }

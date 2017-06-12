@@ -5,16 +5,12 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
-import android.view.GestureDetector;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.HorizontalScrollView;
-import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
-
-import com.google.gson.Gson;
 
 import java.sql.SQLException;
 import java.util.List;
@@ -23,9 +19,11 @@ import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 import ru.strongit.myrecycledepg.DAO.HelperFactory;
-import ru.strongit.myrecycledepg.DAO.dbChannel;
+import ru.strongit.myrecycledepg.DAO.ChannelDB;
+import ru.strongit.myrecycledepg.DAO.ScheduleDB;
 import ru.strongit.myrecycledepg.model.Channel;
 import ru.strongit.myrecycledepg.model.EPGModel;
+import ru.strongit.myrecycledepg.model.Schedule;
 
 
 public class MainActivity extends AppCompatActivity implements View.OnTouchListener {
@@ -65,7 +63,7 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
                 Log.d(TAG, "onClick: btn3 click");
             }
         });
-        
+
         //LinearLayout ll = (LinearLayout) findViewById(R.id.ll);
         recyclerView.setOnTouchListener(this);
         VScroll.setOnTouchListener(this);
@@ -94,11 +92,21 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
             @Override
             public void onResponse(Call<EPGModel> call, Response<EPGModel> response) {
                 mEpg = response.body();
+
                 recyclerView.setAdapter(new EPGAdapter(mEpg));
                 //mEpg = response.body();
 
-                List<Channel> chanels = mEpg.getChannels();
-                Log.d(TAG, "onCreate: " + chanels.size());
+
+                for (Channel chnl : mEpg.getChannels()) {
+
+                    createChannelDB(chnl);
+
+                    for (Schedule schdl : chnl.getSchedule()) {
+                        createScheduleDB(chnl, schdl);
+                    }
+                }
+
+
                 recyclerView.getAdapter().notifyDataSetChanged();
             }
 
@@ -107,6 +115,32 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
                 Toast.makeText(MainActivity.this, "Произошла ошибка", Toast.LENGTH_SHORT).show();
             }
         });
+    }
+
+
+
+
+    private void createScheduleDB(Channel chnl, Schedule schdl) {
+        try {
+            ScheduleDB schdlDB = new ScheduleDB();
+            schdlDB.setChannel_id(Integer.parseInt(chnl.getId()));
+            HelperFactory.getHelper().getScheduleDAO().create(schdlDB);
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+
+    }
+
+    private void createChannelDB(Channel chnl) {
+        try {
+            ChannelDB channelDB = new ChannelDB(
+                    Integer.parseInt(chnl.getId())
+                    , chnl.getTitle()
+                    , Integer.parseInt(chnl.getEpgChannelId()));
+            HelperFactory.getHelper().getChannelDAO().create(channelDB);
+        } catch (Exception e) {
+            Log.d(TAG, "onResponse: " + e.getMessage());
+        }
     }
 
 
@@ -140,7 +174,7 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
                 HScroll.scrollBy((int) (mx - curX), (int) (my - curY));
                 mx = curX;
                 my = curY;
-                Log.d(TAG, "onTouch: "+v.getClass().getName()+": "+curX+" / "+curY);
+                Log.d(TAG, "onTouch: " + v.getClass().getName() + ": " + curX + " / " + curY);
                 break;
             case MotionEvent.ACTION_UP:
                 curX = event.getX();
@@ -157,7 +191,7 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
     @Override
     public void onBackPressed() {
         try {
-            dbChannel channel = new dbChannel(123, "Название", 456);
+            ChannelDB channel = new ChannelDB(123, "Название", 456);
 
             HelperFactory.getHelper().getChannelDAO().create(channel);
         } catch (SQLException e) {

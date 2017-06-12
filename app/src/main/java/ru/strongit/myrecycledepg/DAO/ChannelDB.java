@@ -9,7 +9,7 @@ import com.j256.ormlite.table.DatabaseTable;
  */
 
 @DatabaseTable(tableName = "Channels")
-public class dbChannel {
+public class ChannelDB {
 
     @DatabaseField(generatedId = true)
     private int id;
@@ -17,10 +17,10 @@ public class dbChannel {
     @DatabaseField(canBeNull = false, dataType = DataType.STRING, unique = true)
     private String title;
 
-    @DatabaseField(canBeNull = false, dataType = DataType.INTEGER)
+    @DatabaseField(canBeNull = false, dataType = DataType.INTEGER, unique = true)
     private int epg_channel_id;
 
-    public dbChannel() {
+    public ChannelDB() {
 
     }
 
@@ -48,7 +48,7 @@ public class dbChannel {
         this.epg_channel_id = epg_channeel_id;
     }
 
-    public dbChannel(int id, String title, int epg_channeel_id) {
+    public ChannelDB(int id, String title, int epg_channeel_id) {
         this.id = id;
         this.title = title;
         this.epg_channel_id = epg_channeel_id;
