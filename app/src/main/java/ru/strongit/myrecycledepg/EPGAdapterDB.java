@@ -42,11 +42,13 @@ public class EPGAdapterDB extends RecyclerView.Adapter<EPGAdapterDB.ViewHolder> 
     private List<ChannelDB> channelDBs;
     private RelativeLayout rlChannelRow;
     private long currentDT;
+    private long offset;
 
     //конструктор
-    public EPGAdapterDB(List<ChannelDB> channelDBs, long currentDT){ //}, List<ScheduleDB> scheduleDBs) {
+    public EPGAdapterDB(List<ChannelDB> channelDBs, long currentDT, long offset){ //}, List<ScheduleDB> scheduleDBs) {
         this.channelDBs = channelDBs;
         this.currentDT = currentDT;
+        this.offset = offset;
         //this.scheduleDBs = scheduleDBs;
     }
 
@@ -73,7 +75,7 @@ public class EPGAdapterDB extends RecyclerView.Adapter<EPGAdapterDB.ViewHolder> 
         try {
             actSchedules_ids =
                     HelperFactory.getHelper().getScheduleDAO()
-                            .getActiveSchedules(channel.getEpg_channel_id(), currentDT, 7200);
+                            .getActiveSchedules(channel.getEpg_channel_id(), currentDT, offset);
         } catch (SQLException e) {
             e.printStackTrace();
         }

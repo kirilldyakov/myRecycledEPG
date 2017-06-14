@@ -1,6 +1,10 @@
 package ru.strongit.myrecycledepg;
 
 import android.app.Fragment;
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.res.Resources;
 import android.graphics.Color;
 import android.graphics.Point;
@@ -43,9 +47,8 @@ import ru.strongit.myrecycledepg.model.Schedule;
 
 
 public class MainActivity extends AppCompatActivity implements View.OnTouchListener {
-    String TAG = "Main";
+    String TAG = "LOG_TAG";
 
-    EPGModel mEpg;
 
     long currentDT = 1491822000; //System.currentTimeMillis();
 
@@ -61,6 +64,9 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
     private ScrollView VScrollLogo;
     private ScrollView VScrollTable;
 
+
+    private MyBroadcastReceiver mMyBroadcastReceiver;
+
     private float mx = 0f;
     private float my = 0f;
 
@@ -68,6 +74,17 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main2);
+
+        Intent intentMyIntentService = new Intent(this, EPGLoaderService.class);
+        startService(intentMyIntentService);
+
+        // регистрируем BroadcastReceiver
+        mMyBroadcastReceiver = new MyBroadcastReceiver();
+        IntentFilter intentFilter = new IntentFilter(
+                EPGLoaderService.ACTION_EPGLOADERSERVICE);
+        intentFilter.addCategory(Intent.CATEGORY_DEFAULT);
+        registerReceiver(mMyBroadcastReceiver, intentFilter);
+
 
         String strDate = "10.04.17 15:00";
         SimpleDateFormat formatter = new SimpleDateFormat("dd.MM.yy HH:mm");
@@ -78,52 +95,56 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
             e.printStackTrace();
         }
 
-        List<ChannelDB> ActiveChList = new ArrayList<>();
-
-        try {
-            ActiveChList = HelperFactory
-                    .getHelper()
-                    .getScheduleDAO()
-                    .getActiveChanennelsOffset(currentDT, ONE_HOUR);
-            Log.d(TAG, "onCreate: " + ActiveChList.size());
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-
         init_views();
 
-        databaseGetData();
+//        List<ChannelDB> ActiveChList;
+//
+//        try {
+//            ActiveChList = HelperFactory
+//                    .getHelper()
+//                    .getScheduleDAO()
+//                    .getActiveChanennelsOffset(currentDT, ONE_HOUR);
+//            Log.d(TAG, "onCreate: " + ActiveChList.size());
+//        } catch (SQLException e) {
+//            e.printStackTrace();
+//        }
 
 
-        //retrofitGetData();
-
+        databaseGetData(currentDT, ONE_HOUR);
 
     }
 
     @Override
     protected void onStart() {
         super.onStart();
-        int pixel=this.getWindowManager().getDefaultDisplay().getWidth();
-        int dp =pixel/(int)getResources().getDisplayMetrics().density ;
+        int pixel = this.getWindowManager().getDefaultDisplay().getWidth();
+        int dp = pixel / (int) getResources().getDisplayMetrics().density;
         int x = HScroll.getMaxScrollAmount();
     }
 
-    private void databaseGetData() {
+    private void databaseGetData(long currentDT, long offset) {
+
+        List<ChannelDB> ActiveChList = getActiveChannelsDBs(currentDT, offset);
+
+        addLogos(ActiveChList);
+
+        recyclerView.setAdapter(new EPGAdapterDB(ActiveChList, currentDT, offset));
+
+        recyclerView.getAdapter().notifyDataSetChanged();
+    }
+
+    private List<ChannelDB> getActiveChannelsDBs(long currentDT, long offset) {
         List<ChannelDB> ActiveChList = new ArrayList<>();
 
         try {
             ActiveChList = HelperFactory
                     .getHelper()
                     .getScheduleDAO()
-                    .getActiveChanennelsOffset(currentDT, ONE_HOUR);
+                    .getActiveChanennelsOffset(currentDT, offset);
         } catch (SQLException e) {
             e.printStackTrace();
         }
-
-        addLogos(ActiveChList);
-
-        recyclerView.setAdapter(new EPGAdapterDB(ActiveChList, currentDT));
-        recyclerView.getAdapter().notifyDataSetChanged();
+        return ActiveChList;
     }
 
     private void init_views() {
@@ -133,7 +154,6 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
         HScroll = (HorizontalScrollView) findViewById(R.id.HScroll);
         VScrollLogo = (ScrollView) findViewById(R.id.VScroll_logo);
         VScrollTable = (ScrollView) findViewById(R.id.VScroll_table);
-
 
 
         recyclerView.setNestedScrollingEnabled(false);
@@ -146,14 +166,6 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
         layoutManager = new LinearLayoutManager(this);
         recyclerView.setLayoutManager(layoutManager);
 
-        TextView tv3 = (TextView) findViewById(R.id.btn3);
-        tv3.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Log.d(TAG, "onClick: btn3 click");
-            }
-        });
-
         //LinearLayout ll = (LinearLayout) findViewById(R.id.ll);
         //recyclerView.setOnTouchListener(this);
         HScroll.setOnTouchListener(this);
@@ -161,80 +173,13 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
         //VScrollTable.setOnTouchListener(this);
     }
 
-    private void retrofitGetData() {
-
-        myEPGApp.getApi().getEPG().enqueue(new Callback<EPGModel>() {
-            @Override
-            public void onResponse(Call<EPGModel> call, Response<EPGModel> response) {
-                mEpg = response.body();
-
-                recyclerView.setAdapter(new EPGAdapter(mEpg));
-                //mEpg = response.body();
-
-
-                for (Channel chnl : mEpg.getChannels()) {
-                    createChannelDB(chnl);
-                    for (Schedule schdl : chnl.getSchedule()) {
-                        createScheduleDB(schdl);
-                    }
-                }
-
-
-                recyclerView.getAdapter().notifyDataSetChanged();
-            }
-
-            @Override
-            public void onFailure(Call<EPGModel> call, Throwable t) {
-                Toast.makeText(MainActivity.this, "Произошла ошибка", Toast.LENGTH_SHORT).show();
-            }
-        });
-    }
-
-
-    private void createScheduleDB(Schedule schdl) {
-        try {
-            ScheduleDB schdlDB = new ScheduleDB();
-
-            schdlDB.setId(Integer.parseInt(schdl.getId()));
-
-            schdlDB.setChannel_id(Integer.parseInt(schdl.getChannelId()));
-
-            schdlDB.setStart(Long.parseLong(schdl.getStart()));
-
-            schdlDB.setEnd(Long.parseLong(schdl.getEnd()));
-
-            schdlDB.setTitle(schdl.getTitle());
-
-            schdlDB.setDescription(schdl.getDescription());
-
-            HelperFactory.getHelper().getScheduleDAO().create(schdlDB);
-
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
-    }
-
-    private void createChannelDB(Channel chnl) {
-        try {
-            ChannelDB channelDB = new ChannelDB(
-                    Integer.parseInt(chnl.getId())
-                    , chnl.getTitle()
-                    , Integer.parseInt(chnl.getEpgChannelId()));
-            HelperFactory.getHelper().getChannelDAO().create(channelDB);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
 
     @Override
     public boolean onTouch(View v, MotionEvent event) {
-       // Log.d(TAG, v.getClass().getName());
+        // Log.d(TAG, v.getClass().getName());
 
 
-
-        float curX =0 , curY=0;
+        float curX = 0, curY = 0;
 
 
         switch (event.getAction()) {
@@ -248,7 +193,7 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
                 curY = event.getY();
                 //VScrollTable.scrollBy((int) (mx - curX), (int) (my - curY));
                 VScrollTable.scrollBy((int) (mx - curX), (int) (my - curY));
-                VScrollLogo.scrollTo(0,VScrollTable.getScrollY());
+                VScrollLogo.scrollTo(0, VScrollTable.getScrollY());
 
                 mx = curX;
                 my = curY;
@@ -258,12 +203,10 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
                 curY = event.getY();
                 VScrollTable.scrollBy((int) (mx - curX), (int) (my - curY));
                 //VScrollLogo.scrollBy((int) (mx - curX), (int) (my - curY));
-                VScrollLogo.scrollTo(0,VScrollTable.getScrollY());
+                VScrollLogo.scrollTo(0, VScrollTable.getScrollY());
 
                 break;
         }
-
-
 
 
         //Log.d(TAG, "onTouch: "+event.getAction() + v.getClass().getName() + ": " + (int)curX + " / " + (int)curY);
@@ -294,16 +237,16 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
     private void addLogos(List<ChannelDB> lst) {
         Resources r = getResources();
 
-        int heigh_px = (int)TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP
+        int heigh_px = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP
                 , 50, r.getDisplayMetrics());
 
-        int margin_px = (int)TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP
+        int margin_px = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP
                 , 4, r.getDisplayMetrics());
 
         LinearLayout ll_logos = (LinearLayout) findViewById(R.id.ll_logos);
         ll_logos.removeAllViews();
 
-        for (ChannelDB chnl: lst){
+        for (ChannelDB chnl : lst) {
             TextView tv = new TextView(this);
             LinearLayout.LayoutParams tvParams = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, heigh_px);
             tvParams.setMargins(margin_px, 0, margin_px, margin_px); //dp to px
@@ -317,13 +260,32 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
             tv.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    TextView tv = (TextView)v;
-                    Log.d(TAG, "onClick:"+tv.getText()+" "+(int)tv.getTag());
+                    TextView tv = (TextView) v;
+                    Log.d(TAG, "onClick:" + tv.getText() + " " + (int) tv.getTag());
                 }
             });
         }
     }
 
+
+    public class MyBroadcastReceiver extends BroadcastReceiver {
+
+        @Override
+        public void onReceive(Context context, Intent intent) {
+
+            String result = intent.getStringExtra(EPGLoaderService.EXTRA_KEY_OUT);
+            Log.d(TAG, "onReceive: "+result);
+            //Context ctx = getApplicationContext();
+            Toast.makeText(context, "Программа обновлена", Toast.LENGTH_SHORT).show();
+
+        }
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        unregisterReceiver(mMyBroadcastReceiver);
+    }
 }
 
 

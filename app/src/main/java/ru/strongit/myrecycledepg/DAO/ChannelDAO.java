@@ -8,6 +8,8 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
+import ru.strongit.myrecycledepg.model.Channel;
+
 /**
  * Created by user on 10.06.17.
  */
@@ -35,6 +37,13 @@ public class ChannelDAO extends BaseDaoImpl<ChannelDB, Integer> {
         return listToReturn.get(0);
     }
 
+    public void createChannelDB(Channel chnl) throws SQLException {
+            ChannelDB channelDB = new ChannelDB(
+                    Integer.parseInt(chnl.getId())
+                    , chnl.getTitle()
+                    , Integer.parseInt(chnl.getEpgChannelId()));
+            HelperFactory.getHelper().getChannelDAO().create(channelDB);
+    }
 
 }
 
