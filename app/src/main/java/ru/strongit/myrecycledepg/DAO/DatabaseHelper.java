@@ -24,7 +24,7 @@ public class DatabaseHelper extends OrmLiteSqliteOpenHelper {
     private static final String DATABASE_NAME ="epg.db";
 
     //с каждым увеличением версии, при нахождении в устройстве БД с предыдущей версией будет выполнен метод onUpgrade();
-    private static final int DATABASE_VERSION = 2;
+    private static final int DATABASE_VERSION = 6;
 
     //ссылки на DAO соответсвующие сущностям, хранимым в БД
 //    private GoalDAO goalDao = null;
@@ -38,6 +38,7 @@ public class DatabaseHelper extends OrmLiteSqliteOpenHelper {
     //Выполняется, когда файл с БД не найден на устройстве
     @Override
     public void onCreate(SQLiteDatabase db, ConnectionSource connectionSource){
+        Log.d(TAG, "onCreate: ");
         try
         {
 //            TableUtils.createTable(connectionSource, Goal.class);
@@ -54,6 +55,7 @@ public class DatabaseHelper extends OrmLiteSqliteOpenHelper {
     @Override
     public void onUpgrade(SQLiteDatabase db, ConnectionSource connectionSource, int oldVer,
                           int newVer){
+        Log.d(TAG, "onUpgrade: ");
         try{
             //Так делают ленивые, гораздо предпочтительнее не удаляя БД аккуратно вносить изменения
             //TableUtils.dropTable(connectionSource, Goal.class, true);
@@ -94,8 +96,8 @@ public class DatabaseHelper extends OrmLiteSqliteOpenHelper {
     @Override
     public void close(){
         super.close();
-//        goalDao = null;
         ChannelDao = null;
+        ScheduleDao = null;
     }
 
 

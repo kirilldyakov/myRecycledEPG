@@ -40,7 +40,7 @@ public class ChannelDB {
         this.title = title;
     }
 
-    public double getEpg_channel_id() {
+    public int getEpg_channel_id() {
         return epg_channel_id;
     }
 
@@ -60,10 +60,6 @@ public class ChannelDB {
                 "id=" + id +
                 ", title=" + title +
                 ", epg_channeel_id=" + epg_channel_id +
-//                ", Price=" + Price +
-//                ", Summa=" + Summa +
-//                ", Odometr=" + Odometr +
-//                ", FullTank=" + FullTank +
                 '}';
     }
 }

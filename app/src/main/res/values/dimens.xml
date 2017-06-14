@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <dimen name="channel_padding_bottom">6dp</dimen>
-    <dimen name="header_high">16dp</dimen>
+    <dimen name="time_line_high">20dp</dimen>
     <dimen name="row_high">50dp</dimen>
 </resources>

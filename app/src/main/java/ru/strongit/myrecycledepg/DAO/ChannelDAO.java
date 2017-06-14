@@ -5,6 +5,7 @@ import com.j256.ormlite.dao.BaseDaoImpl;
 import com.j256.ormlite.support.ConnectionSource;
 
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -22,7 +23,19 @@ public class ChannelDAO extends BaseDaoImpl<ChannelDB, Integer> {
         return this.queryForAll();
     }
 
+    public ChannelDB getChanelDBByEpg_Id(int channel_id) throws SQLException {
+        ChannelDB chnl = null;
+        List<ChannelDB> listToReturn = new ArrayList<>();
+        try {
+            listToReturn = this.queryForEq("epg_channel_id", channel_id);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
+        return listToReturn.get(0);
+    }
 
 
 }
+
+
