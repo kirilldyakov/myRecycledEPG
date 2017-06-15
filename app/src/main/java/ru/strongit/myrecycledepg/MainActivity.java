@@ -1,91 +1,90 @@
 package ru.strongit.myrecycledepg;
 
-import android.app.Fragment;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.res.Resources;
 import android.graphics.Color;
-import android.graphics.Point;
 import android.os.Build;
 import android.os.Bundle;
-import android.support.v4.app.FragmentActivity;
-import android.support.v4.view.ViewPager;
+import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.util.TypedValue;
-import android.view.Display;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
-import android.view.ViewGroup;
 import android.widget.HorizontalScrollView;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import java.sql.Date;
 import java.sql.SQLException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.List;
 
-import retrofit2.Call;
-import retrofit2.Callback;
-import retrofit2.Response;
 import ru.strongit.myrecycledepg.DAO.HelperFactory;
 import ru.strongit.myrecycledepg.DAO.ChannelDB;
-import ru.strongit.myrecycledepg.DAO.ScheduleDB;
-import ru.strongit.myrecycledepg.model.Channel;
-import ru.strongit.myrecycledepg.model.EPGModel;
-import ru.strongit.myrecycledepg.model.Schedule;
 
 
 public class MainActivity extends AppCompatActivity implements View.OnTouchListener {
-    String TAG = "LOG_TAG";
-
-
-    long currentDT = 1491822000; //System.currentTimeMillis();
 
     final long TWO_HOURS = 2 * 60 * 60;
     final long ONE_HOUR = 1 * 60 * 60;
 
-    RecyclerView recyclerView;
-    private EPGAdapter epg_adapter;
-    private LinearLayoutManager layoutManager;
+    long currentDT = 1491822000; //System.currentTimeMillis();
+    long offset = TWO_HOURS;
 
 
-    private HorizontalScrollView HScroll;
-    private ScrollView VScrollLogo;
-    private ScrollView VScrollTable;
+    private RecyclerView mRrecyclerView;
+    private LinearLayoutManager mLayoutManager;
 
+    private HorizontalScrollView mHScroll;
+    private ScrollView mVScrollLogo;
+    private ScrollView mVScrollTable;
 
     private MyBroadcastReceiver mMyBroadcastReceiver;
 
     private float mx = 0f;
     private float my = 0f;
 
+    /**
+     * Конструктор класс MainActivity
+     *
+     * @param savedInstanceState
+     */
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+
         super.onCreate(savedInstanceState);
+
         setContentView(R.layout.activity_main2);
 
-        Intent intentMyIntentService = new Intent(this, EPGLoaderService.class);
-        startService(intentMyIntentService);
-
-        // регистрируем BroadcastReceiver
-        mMyBroadcastReceiver = new MyBroadcastReceiver();
-        IntentFilter intentFilter = new IntentFilter(
-                EPGLoaderService.ACTION_EPGLOADERSERVICE);
-        intentFilter.addCategory(Intent.CATEGORY_DEFAULT);
-        registerReceiver(mMyBroadcastReceiver, intentFilter);
 
 
+        init_views();
+
+        currentDT = (long) System.currentTimeMillis() / 1000;
+
+        setCurrentDTtoDemoDate(); //Потом удалить
+
+        generateEPG(currentDT, offset);
+
+        init_EPGLoad_Service();
+
+        init_BroadcastReciever();
+    }
+
+    /**
+     * Присваивает значение демонстрационной даты
+     */
+    private void setCurrentDTtoDemoDate() {
         String strDate = "10.04.17 15:00";
         SimpleDateFormat formatter = new SimpleDateFormat("dd.MM.yy HH:mm");
         try {
@@ -94,46 +93,73 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
         } catch (ParseException e) {
             e.printStackTrace();
         }
+    }
 
-        init_views();
+    /**
+     * Инициализация класса сервиса загрузки данных
+     */
+    private void init_EPGLoad_Service() {
 
-//        List<ChannelDB> ActiveChList;
-//
-//        try {
-//            ActiveChList = HelperFactory
-//                    .getHelper()
-//                    .getScheduleDAO()
-//                    .getActiveChanennelsOffset(currentDT, ONE_HOUR);
-//            Log.d(TAG, "onCreate: " + ActiveChList.size());
-//        } catch (SQLException e) {
-//            e.printStackTrace();
-//        }
+        Intent intentMyIntentService = new Intent(this, EPGLoaderService.class);
+
+        startService(intentMyIntentService);
+
+    }
 
 
-        databaseGetData(currentDT, ONE_HOUR);
+    /**
+     * Регистрируем BroadcastReceiver для передачи сообщений в MainActivity
+     */
+    private void init_BroadcastReciever() {
 
+        mMyBroadcastReceiver = new MyBroadcastReceiver();
+
+        IntentFilter intentFilter = new IntentFilter(EPGLoaderService.ACTION_EPGLOADERSERVICE);
+
+        intentFilter.addCategory(Intent.CATEGORY_DEFAULT);
+
+        registerReceiver(mMyBroadcastReceiver, intentFilter);
     }
 
     @Override
     protected void onStart() {
         super.onStart();
+
         int pixel = this.getWindowManager().getDefaultDisplay().getWidth();
+
         int dp = pixel / (int) getResources().getDisplayMetrics().density;
-        int x = HScroll.getMaxScrollAmount();
+
+        int x = mHScroll.getMaxScrollAmount();
+
     }
 
-    private void databaseGetData(long currentDT, long offset) {
+    /**
+     * Генерирует представление программы передач
+     *
+     * @param currentDT
+     * @param offset
+     */
+    private void generateEPG(long currentDT, long offset) {
 
         List<ChannelDB> ActiveChList = getActiveChannelsDBs(currentDT, offset);
 
         addLogos(ActiveChList);
 
-        recyclerView.setAdapter(new EPGAdapterDB(ActiveChList, currentDT, offset));
+        mRrecyclerView.setAdapter(new EPGAdapterDB(ActiveChList, currentDT, offset));
 
-        recyclerView.getAdapter().notifyDataSetChanged();
+        mRrecyclerView.getAdapter().notifyDataSetChanged();
     }
 
+
+    /**
+     * Возвращает список активных каналов на дату currentDT +- смещение
+     *
+     * @param currentDT
+     * @param offset
+     * @return
+     */
     private List<ChannelDB> getActiveChannelsDBs(long currentDT, long offset) {
+
         List<ChannelDB> ActiveChList = new ArrayList<>();
 
         try {
@@ -142,129 +168,179 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
                     .getScheduleDAO()
                     .getActiveChanennelsOffset(currentDT, offset);
         } catch (SQLException e) {
+
             e.printStackTrace();
+
         }
         return ActiveChList;
     }
 
+    /**
+     * Инициализация графических компонент
+     */
     private void init_views() {
-        recyclerView = (RecyclerView) findViewById(R.id.cannels_recycle_view);
+        mRrecyclerView = (RecyclerView) findViewById(R.id.cannels_recycle_view);
 
+        mHScroll = (HorizontalScrollView) findViewById(R.id.HScroll);
 
-        HScroll = (HorizontalScrollView) findViewById(R.id.HScroll);
-        VScrollLogo = (ScrollView) findViewById(R.id.VScroll_logo);
-        VScrollTable = (ScrollView) findViewById(R.id.VScroll_table);
+        mVScrollLogo = (ScrollView) findViewById(R.id.VScroll_logo);
 
+        mVScrollTable = (ScrollView) findViewById(R.id.VScroll_table);
 
-        recyclerView.setNestedScrollingEnabled(false);
+        mRrecyclerView.setNestedScrollingEnabled(false);
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            VScrollTable.setNestedScrollingEnabled(false);
-            HScroll.setNestedScrollingEnabled(false);
+
+            mVScrollTable.setNestedScrollingEnabled(false);
+
+            mHScroll.setNestedScrollingEnabled(false);
         }
 
-        layoutManager = new LinearLayoutManager(this);
-        recyclerView.setLayoutManager(layoutManager);
+        mLayoutManager = new LinearLayoutManager(this);
 
-        //LinearLayout ll = (LinearLayout) findViewById(R.id.ll);
-        //recyclerView.setOnTouchListener(this);
-        HScroll.setOnTouchListener(this);
-        VScrollLogo.setOnTouchListener(this);
-        //VScrollTable.setOnTouchListener(this);
+        mRrecyclerView.setLayoutManager(mLayoutManager);
+
+        mHScroll.setOnTouchListener(this);
+
+        mVScrollLogo.setOnTouchListener(this);
+        //mVScrollTable.setOnTouchListener(this);
+        mVScrollTable.setOnTouchListener(null);
     }
 
-
+    /**
+     * Реализует дагональный скролл
+     *
+     * @param v
+     * @param event
+     * @return
+     */
     @Override
     public boolean onTouch(View v, MotionEvent event) {
-        // Log.d(TAG, v.getClass().getName());
 
+        Log.d("TAG", "onTouch: "+v.getClass().getName());
 
         float curX = 0, curY = 0;
-
 
         switch (event.getAction()) {
 
             case MotionEvent.ACTION_DOWN:
+
                 mx = event.getX();
+
                 my = event.getY();
+
                 break;
+
             case MotionEvent.ACTION_MOVE:
+
                 curX = event.getX();
+
                 curY = event.getY();
-                //VScrollTable.scrollBy((int) (mx - curX), (int) (my - curY));
-                VScrollTable.scrollBy((int) (mx - curX), (int) (my - curY));
-                VScrollLogo.scrollTo(0, VScrollTable.getScrollY());
+
+
+                mVScrollTable.scrollBy((int) (mx - curX), (int) (my - curY));
+
+                mVScrollLogo.scrollTo(0, mVScrollTable.getScrollY());
 
                 mx = curX;
+
                 my = curY;
+
                 break;
             case MotionEvent.ACTION_UP:
+
                 curX = event.getX();
+
                 curY = event.getY();
-                VScrollTable.scrollBy((int) (mx - curX), (int) (my - curY));
-                //VScrollLogo.scrollBy((int) (mx - curX), (int) (my - curY));
-                VScrollLogo.scrollTo(0, VScrollTable.getScrollY());
+
+                mVScrollTable.scrollBy((int) (mx - curX), (int) (my - curY));
+
+                //mVScrollLogo.scrollBy((int) (mx - curX), (int) (my - curY));
+                mVScrollLogo.scrollTo(0, mVScrollTable.getScrollY());
 
                 break;
         }
 
-
-        //Log.d(TAG, "onTouch: "+event.getAction() + v.getClass().getName() + ": " + (int)curX + " / " + (int)curY);
         return false;
 
     }
 
     @Override
     public void onBackPressed() {
-//        long l = 1491811200000L;
-//
-//        Date dt = new Date(l);
-//        SimpleDateFormat sdf = new SimpleDateFormat("dd.MM.yy HH.mm.ss");
-//        Log.d(TAG, "onBackPressed: "+sdf.format(dt)+" "+l);
-//
-//        final long l1=1491832200000L;
-//        Date dt1 = new Date(l1);
-//        Log.d(TAG, "onBackPressed: "+sdf.format(dt1)+" "+l1);
-//
-//        final long l2 = System.currentTimeMillis();
-//        Date dt2 = new  Date(l2);
-//        Log.d(TAG, "onBackPressed: "+sdf.format(dt2)+" "+l2);
-
 
     }
 
-
+    /**
+     * Добавляет логотипы каналов
+     *
+     * @param lst список каналов
+     */
     private void addLogos(List<ChannelDB> lst) {
+
         Resources r = getResources();
 
-        int heigh_px = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP
+        final int heigh_px = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP
                 , 50, r.getDisplayMetrics());
 
-        int margin_px = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP
+        final int margin_px = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP
                 , 4, r.getDisplayMetrics());
 
-        LinearLayout ll_logos = (LinearLayout) findViewById(R.id.ll_logos);
-        ll_logos.removeAllViews();
+        LinearLayout mLLLogos = (LinearLayout) findViewById(R.id.ll_logos);
 
-        for (ChannelDB chnl : lst) {
-            TextView tv = new TextView(this);
-            LinearLayout.LayoutParams tvParams = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, heigh_px);
-            tvParams.setMargins(margin_px, 0, margin_px, margin_px); //dp to px
-            tvParams.gravity = Gravity.CENTER;
-            tv.setLayoutParams(tvParams);
-            tv.setBackgroundColor(Color.WHITE);
-            tv.setText(chnl.getTitle());
-            tv.setTag(chnl.getEpg_channel_id());
-            ll_logos.addView(tv);
+        mLLLogos.removeAllViews();
 
-            tv.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    TextView tv = (TextView) v;
-                    Log.d(TAG, "onClick:" + tv.getText() + " " + (int) tv.getTag());
-                }
-            });
+        for (ChannelDB channelDB : lst) {
+
+            TextView iconAsTextView = getIconAsTextView(channelDB, heigh_px, margin_px);
+
+            mLLLogos.addView(iconAsTextView);
         }
+    }
+
+    /**
+     * Возвращает сгенерированную иконку TextView
+     *
+     * @param channelDB
+     * @param heigh_px
+     * @param margin_px
+     * @return
+     */
+    @NonNull
+    private TextView getIconAsTextView(ChannelDB channelDB, int heigh_px, int margin_px) {
+        TextView tv = new TextView(this);
+
+        LinearLayout.LayoutParams tvParams =
+                new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, heigh_px);
+
+        tvParams.setMargins(margin_px, 0, margin_px, margin_px);
+
+        tvParams.gravity = Gravity.CENTER;
+
+        tv.setLayoutParams(tvParams);
+
+        tv.setBackgroundColor(Color.WHITE);
+
+        tv.setText(channelDB.getTitle());
+
+        tv.setTag(channelDB.getEpg_channel_id());
+
+
+        tv.setOnClickListener(new View.OnClickListener() {
+
+            @Override
+            public void onClick(View v) {
+
+                TextView tv = (TextView) v;
+
+                Toast.makeText(
+                        MainActivity.this
+                        , "Нажата иконка \'" + tv.getText() + "\' " + (int) tv.getTag()
+                        , Toast.LENGTH_SHORT).show();
+
+
+            }
+        });
+        return tv;
     }
 
 
@@ -274,17 +350,34 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
         public void onReceive(Context context, Intent intent) {
 
             String result = intent.getStringExtra(EPGLoaderService.EXTRA_KEY_OUT);
-            Log.d(TAG, "onReceive: "+result);
-            //Context ctx = getApplicationContext();
-            Toast.makeText(context, "Программа обновлена", Toast.LENGTH_SHORT).show();
+
+            Toast.makeText(context, "Лоадер:" + result, Toast.LENGTH_SHORT).show();
+
+            Log.d("LOG_TAG",  "Лоадер:" + result);
+
+            switch (result) {
+                case EPGLoaderService.EXTRA_LOADING_STARTED:
+                    break;
+                case EPGLoaderService.EXTRA_JSON_LOADED:
+                    break;
+                case EPGLoaderService.EXTRA_LOADING_STOPPED:
+                    generateEPG(currentDT, offset);
+                    break;
+                case EPGLoaderService.EXTRA_LOADING_ERROR:
+                    break;
+            }
+
 
         }
     }
 
     @Override
     protected void onDestroy() {
+
         super.onDestroy();
+
         unregisterReceiver(mMyBroadcastReceiver);
+
     }
 }
 

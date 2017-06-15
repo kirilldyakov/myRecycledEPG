@@ -26,8 +26,20 @@ public class EPGLoaderService extends IntentService {
 
 
     public static final String ACTION_EPGLOADERSERVICE = "ru.strongit.myrecycledepg.intentservice.RESPONSE";
+
+
     public static final String EXTRA_KEY_OUT = "EXTRA_OUT";
+
+    public static final String EXTRA_LOADING_STARTED = "EXTRA_LOADING_STARTED";
+
+    public static final String EXTRA_LOADING_STOPPED = "EXTRA_LOADING_STOPPED";
+
+    public static final String EXTRA_JSON_LOADED = "EXTRA_JSON_LOADED";
+
+    public static final String EXTRA_LOADING_ERROR = "EXTRA_LOADING_ERROR";
+
     String extraOut = "Кота накормили, погладили и поиграли с ним";
+
 
     public EPGLoaderService() {
 
@@ -51,22 +63,23 @@ public class EPGLoaderService extends IntentService {
     @Override
     protected void onHandleIntent(Intent intent) {
 
-        final Timer t = new Timer();
+        final Timer timer = new Timer();
 
-        t.scheduleAtFixedRate(new TimerTask() {
+        timer.scheduleAtFixedRate(new TimerTask() {
 
             @Override
             public void run() {
 
-                retrofitGetData();
+                SendBroadcastMessage(EXTRA_LOADING_STARTED);
 
+                retrofitGetData();
 
             }
 
 
 
         }, 0,
-                20 * 1000); // 4 * 60 * 60 * 1000 = 4 часа
+                200 * 1000); // 4 * 60 * 60 * 1000 = 4 часа
 
     }
 
@@ -77,10 +90,10 @@ public class EPGLoaderService extends IntentService {
 
             @Override
             public void onResponse(Call<EPGModel> call, Response<EPGModel> response) {
-                EPGModel mEpg = response.body();
 
-                //recyclerView.setAdapter(new EPGAdapter(mEpg));
-                //mEpg = response.body();
+                SendBroadcastMessage(EXTRA_JSON_LOADED);
+
+                EPGModel mEpg = response.body();
 
                 for (Channel chnl : mEpg.getChannels()) {
                     try {
@@ -104,20 +117,24 @@ public class EPGLoaderService extends IntentService {
 
                         }
                     }
-                }
 
-                //recyclerView.getAdapter().notifyDataSetChanged();
-                Intent responseIntent = new Intent();
-                responseIntent.setAction(ACTION_EPGLOADERSERVICE);
-                responseIntent.addCategory(Intent.CATEGORY_DEFAULT);
-                responseIntent.putExtra(EXTRA_KEY_OUT, extraOut);
-                sendBroadcast(responseIntent);
+
+                }
+                SendBroadcastMessage(EXTRA_LOADING_STOPPED);
             }
 
             @Override
             public void onFailure(Call<EPGModel> call, Throwable t) {
-                //Toast.makeText(MainActivity.this, "Произошла ошибка", Toast.LENGTH_SHORT).show();
+                SendBroadcastMessage(EXTRA_LOADING_ERROR);
             }
         });
+    }
+
+    private void SendBroadcastMessage(String message) {
+//        Intent responseIntent = new Intent();
+//        responseIntent.setAction(ACTION_EPGLOADERSERVICE);
+//        responseIntent.addCategory(Intent.CATEGORY_DEFAULT);
+//        responseIntent.putExtra(EXTRA_KEY_OUT, message);
+//        sendBroadcast(responseIntent);
     }
 }
